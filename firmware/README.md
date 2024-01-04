@@ -5,3 +5,10 @@ Initial public release.<br><br>
 
 # Rev 1.3b - 28NOV2023
 Adds folders for each Serial Number backed up.  Each subsequent backup will also go into that same folder for that individual serial number.<br><br>
+
+# Rev 2.0b - Not Released
+Adds function to get the passwords of OG Xbox Slim Seagate Drives.<br><br>
+
+# Rev 2.1b - Not Released
+Adds Rubber Jacketed drives to password function.<br><br>
+
