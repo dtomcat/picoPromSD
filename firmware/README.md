@@ -12,3 +12,6 @@ Adds function to get the passwords of OG Xbox Slim Seagate Drives.<br><br>
 # Rev 2.1b - Not Released
 Adds Rubber Jacketed drives to password function.<br><br>
 
+# Rev 2.2 - 01/05/2024
+First release with HDD Password grabbing without EEPROM or Xbox Console.  No changes to the EEPROM side of things.  Beta tag removed from overall Firmware; however, the Seagate side of things will be considered a beta feature.  There may be bugs... and some HDDs are slow to boot and some have minor errors....  These may cause unknown results.  So error catching is incorporated, but again, unsure for every scenario.  Enjoy!
+
