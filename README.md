@@ -2,3 +2,5 @@
 
 # picoPromSD
 EEPROM reader/writer and OG Xbox Seagate Password retrieval for the Original Xbox that also decodes the EEPROM data
+
+**Project will be open sourced
