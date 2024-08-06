@@ -26,6 +26,6 @@ This project is based on the work from Ryzee119's ArduinoProm:
 This project uses code by Ryzee119, dx4m (from this [project](https://github.com/dx4m/Xbox-EEPROM-Utility)), and may contain code from various snippets from different forums (sorry lost my notes on who to thank).
 
 This project is a continuation of my work from [ArdPromSD project](https://github.com/dtomcat/ArdPromSD).
-This project was moved to an RP2040 MCU for more memory space.  This allowed me add the features I wanted to in the previous project, but ran out of program space.  New features include better logging, eeprom decryption, as well as being able to retrieve the password from OEM seagate drives without the need for the original eeprom, original xbox, or even a PC!
+This project was moved to an RP2040 MCU for more memory space.  This allowed me add the features I wanted to from the previous project, but ran out of program space to do so.  New features include better logging, eeprom decryption, as well as being able to retrieve the password from OEM seagate drives without the need for the original eeprom, original xbox, or even a PC!
 
 Over the next few months I'll slowly be uploading more and more to make it fully open sourced.  Enjoy!
