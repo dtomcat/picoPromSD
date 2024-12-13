@@ -1,0 +1,1 @@
+This is the STL for the pogoadapter.  Uses a 2x08 pin header and 5 pogo pins.   Highly recommend P75-E3 pogo pins.
