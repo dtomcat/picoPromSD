@@ -3,3 +3,6 @@
 # Rev 1.1 - 12DEC2024
 Initial Release (No Gerbers or Assembly info for this release.  1.5H and above will have them.)
 
+# Rev 1.5H - 02JAN2025
+Happy New Year!  1.5H released (rework done by Harcroft - Thank you!  Allows for lower cost build with same quality and funcionality) This is a full release with everything you need to build one, or have one assembled.
+

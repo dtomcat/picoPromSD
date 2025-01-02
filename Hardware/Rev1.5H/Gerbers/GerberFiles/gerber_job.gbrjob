@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2025-01-02T04:21:04Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.5.1"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "picoPromSD"
+        },
+        "Owner": "Harcroft Harcroft <harcroft@yahoo.ca>",
+        "Size": {
+            "X": 63,
+            "Y": 33
+        }
+    }
+}
