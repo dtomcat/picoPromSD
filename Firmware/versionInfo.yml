@@ -1,0 +1,3 @@
+version: "2.4"
+date: "30 JAN 2025"
+notes: "Adds file checking to eeprom.bin before writing to xbox"
