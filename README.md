@@ -3,7 +3,16 @@
 # picoPromSD
 EEPROM reader/writer and OG Xbox Seagate Password retrieval for the Original Xbox that also decodes the EEPROM data
 
+What will it do?
 
+1. Backup the Xbox's EEPROM and save it to microSD card.
+2. Can write an EEPROM backup saved to µSD card to the Xbox's EEPROM.  (has some checks to help prevent writing a bad backup to the EEPROM)
+3. Decrypt the EEPROM and save the important information in plain text to the µSD card.
+4. Can calculate the HDD password while backing up the EEPROM (for OEM Seagate and WD drives)
+		- Requires preparing an additional file.  Video of process: [Video of Process](https://youtu.be/JSXaQWXcwFo?si=bOLGbLG80aQxxA59)
+5. For OEM Seagate drives (ALL), It can grab the HDD password directly from the drive itself.  No need for EEPROM or XBOX.  [Video of Process](https://youtu.be/1lWm_fr0Neo?si=kcM-wwt6UB56qRjm)
+6. More features may be added later.
+<br><br><br>
 This project is based on the work from Ryzee119's ArduinoProm:
 
 >ArduinoProm. An Arduino based Original Xbox EEPROM reader and writer.
@@ -27,5 +36,3 @@ This project uses code by Ryzee119, dx4m (from this [project](https://github.com
 
 This project is a continuation of my work from [ArdPromSD project](https://github.com/dtomcat/ArdPromSD).
 This project was moved to an RP2040 MCU for more memory space.  This allowed me add the features I wanted to from the previous project, but ran out of program space to do so.  New features include better logging, eeprom decryption, as well as being able to retrieve the password from OEM seagate drives without the need for the original eeprom, original xbox, or even a PC!
-
-Over the next few months I'll slowly be uploading more and more to make it fully open sourced.  Enjoy!
