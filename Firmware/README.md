@@ -19,5 +19,5 @@ The versions with still be ND for No Delay, and regular... the Regular (with 5 s
 # Rev 2.3 - 01/14/2024
 Adds picoPromSDs digital serial number to log<br><br>
 
-# Rev 2.3 - 01/30/2025
+# Rev 2.4 - 01/30/2025
 Adds file checking to eeprom.bin before writing to xbox.  This is to help prevent writing a wrong/bad file and corrupting your EEPROM.  (not fail safe... but helps)<br><br>
