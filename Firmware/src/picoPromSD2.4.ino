@@ -16,8 +16,8 @@ const int _SCK = 10;
 const int logPrint = 1;         //Definitions for serialLog function
 const int logPrintln = 2;       //Definitions for serialLog function
 String deSerial;
-const char ver[] = "2.3";       //Firmware Version constant 
-bool noDelay = true;            //Used to remove delay that is used to allow time for a serial connection
+const char ver[] = "2.4";       //Firmware Version constant 
+bool noDelay = false;            //Used to remove delay that is used to allow time for a serial connection
 uint8_t UniqueID[8];            //Holds PicoPromSD's Serial Number
 
 //variables for Seagate Password routines
@@ -271,7 +271,40 @@ void loop(){
   //if not, halt program
   if (SD.exists("writeep/eeprom.bin"))
   {
-    serialLog(logPrintln, "eeprom.bin found in writeep folder, waiting for button press to write EEPROM...");
+    serialLog(logPrintln, "eeprom.bin found in writeep folder!");
+    File ckFile = SD.open("writeep/eeprom.bin", FILE_READ);
+    serialLog(logPrint, "writeep/eeprom.bin size = ");
+    serialLog(logPrintln, String(ckFile.size()));
+    memset(pbEEPROM, 0, XBOX_EEPROM_SIZE);
+    memset(deEEPROM, 0, XBOX_EEPROM_SIZE);
+    if (ckFile.size() != 256)
+    {
+      serialLog(logPrintln, "*********************************************");
+      serialLog(logPrintln, "writeep/eeprom.bin is wrong file size. Write cannot be performed");
+      serialLog(logPrintln, "*********************************************");
+      endProgramError();
+    }
+    serialLog(logPrintln, "attempting to read writeep/eeprom.bin and decrypt");
+    returnStatus = ckFile.read((uint8_t*) pbEEPROM, XBOX_EEPROM_SIZE);
+    if (returnStatus){
+      memcpy(deEEPROM, pbEEPROM, XBOX_EEPROM_SIZE);
+      XboxCrypto *xbx2 = new XboxCrypto();
+      if (xbx2->decrypt((unsigned char *)deEEPROM) >= 0) {
+       serialLog(logPrintln, "EEPROM Decrypted successfully!");
+      } else {
+        serialLog(logPrintln, "*********************************************");
+        serialLog(logPrintln, "writeep/eeprom.bin was not able to be decrypted. For safety, write cannot be performed");
+        serialLog(logPrintln, "*********************************************");
+        endProgramError();
+      }
+    } else {
+      serialLog(logPrintln, "*********************************************");
+      serialLog(logPrintln, "writeep/eeprom.bin was not able to be read. Write cannot be performed");
+      serialLog(logPrintln, "*********************************************");
+      endProgramError();
+    }
+    ckFile.close();
+    serialLog(logPrintln, "All checks passed, waiting for button press to write EEPROM...");
     while (!buttonState) {
       digitalWrite(GLED, !digitalRead(GLED));
       buttonState = digitalRead(BUTT);
@@ -715,6 +748,18 @@ void serialLog(int cmd, String text){
       if (isLogFile) logFile.println(text);
       Serial.println(text);
       break;
+  }
+}
+
+void endProgramError(){
+  if (isLogFile){ 
+    Serial.println("closing log file...");
+    logFile.close();
+  }
+  digitalWrite(GLED, LOW);
+  while(1){
+    digitalWrite(RLED, !digitalRead(RLED));
+    delay(100);
   }
 }
 
