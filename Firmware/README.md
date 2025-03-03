@@ -21,3 +21,7 @@ Adds picoPromSDs digital serial number to log<br><br>
 
 # Rev 2.4 - 01/30/2025
 Adds file checking to eeprom.bin before writing to xbox.  This is to help prevent writing a wrong/bad file and corrupting your EEPROM.  (not fail safe... but helps)<br><br>
+
+# Rev 3.0 - 03/03/2025
+Adds OEM Seagate (slim and RJ) drive unlocking (no xbox/pc needed).
+Cleaned up logging<br><br>

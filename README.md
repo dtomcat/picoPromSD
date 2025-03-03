@@ -11,7 +11,8 @@ What will it do?
 4. Can calculate the HDD password while backing up the EEPROM (for OEM Seagate and WD drives)
 		- Requires preparing an additional file.  Video of process: [Video of Process](https://youtu.be/JSXaQWXcwFo?si=bOLGbLG80aQxxA59)
 5. For OEM Seagate drives (ALL), It can grab the HDD password directly from the drive itself.  No need for EEPROM or XBOX.  [Video of Process](https://youtu.be/1lWm_fr0Neo?si=kcM-wwt6UB56qRjm)
-6. More features may be added later.
+6. For OEM Seagate drives (ALL), It can unlock the HDD directly from the drive itself.  No need for EEPROM or XBOX.  [Video of Slim](https://www.youtube.com/shorts/Nwhjg9Vyvl8), [Video of RJ](https://www.youtube.com/shorts/swidWJ0N5yo)
+7. More features may be added later.
 <br><br><br>
 This project is based on the work from Ryzee119's ArduinoProm:
 
@@ -36,3 +37,8 @@ This project uses code by Ryzee119, dx4m (from this [project](https://github.com
 
 This project is a continuation of my work from [ArdPromSD project](https://github.com/dtomcat/ArdPromSD).
 This project was moved to an RP2040 MCU for more memory space.  This allowed me add the features I wanted to from the previous project, but ran out of program space to do so.  New features include better logging, eeprom decryption, as well as being able to retrieve the password from OEM seagate drives without the need for the original eeprom, original xbox, or even a PC!
+
+SPECIAL THANKS!!!!<br>
+Ryzee for his project above!<br>
+Skye for all the HDD commands and knowledge! Invaluable addition to PPSD!<br>
+Beta Testers:  Cato, Harcroft, Siktah

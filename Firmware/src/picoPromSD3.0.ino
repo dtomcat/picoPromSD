@@ -6,6 +6,17 @@
 
 extern "C" void flash_get_unique_id(uint8_t *p);
 
+//********************************************
+//**********    COMPILE OPTIONS     ********** 
+//********************************************
+bool noDelay = false;            //Used to remove delay that is used to allow time for a serial connection
+bool verboseMode = false;       //Display all HDD terminal info?
+const char ver[] = "3.0";       //Firmware Version constant 
+//********************************************
+//********************************************
+//********************************************
+
+
 //SD card pin assignment
 const int _MISO = 12;
 const int _MOSI = 11;
@@ -13,17 +24,22 @@ const int _CS = 13;
 const int _SCK = 10;
 //End SD card pin assignment
 
+//HDD Delay Constants
+const int slimDelay = 8000;
+const String slimText = "8 sec";
+const int rjDelay = 5000;
+const String rjText = "5 sec";
+//End HDD Delay Cosntants
+
 const int logPrint = 1;         //Definitions for serialLog function
 const int logPrintln = 2;       //Definitions for serialLog function
 String deSerial;
-const char ver[] = "2.4";       //Firmware Version constant 
-bool noDelay = false;            //Used to remove delay that is used to allow time for a serial connection
 uint8_t UniqueID[8];            //Holds PicoPromSD's Serial Number
 
 //variables for Seagate Password routines
-byte r1, r2, r3, r4, r5, r6, r7, r8, r9, r10;
+byte r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14;
+char lockBit = 0;
 char conRx;                     //General CHAR variable
-bool verboseMode = false;       //Display all HDD terminal info?
 bool ErrDet = false;            //Error Flag
 bool isSlim = true;             //True if Slim, False if Rubber
 String HDDPW = "";              //Holds HDD Password
@@ -43,6 +59,7 @@ File logFile;
 bool isLogFile = false;
 bool hddPassFile = false;
 bool grabPassOnly = false;
+bool unlockSeagate = false;
 String SN = "";
 
 char pbEEPROM[XBOX_EEPROM_SIZE];
@@ -57,22 +74,28 @@ void setup() {
   pinMode(BUTT, INPUT_PULLDOWN);
   digitalWrite(GLED, HIGH); //Green LED on
   digitalWrite(RLED, HIGH); //Red LED on
-
+  //Check if HDD Password mode is desired
   if (digitalRead(BUTT)){
     grabPassOnly = true;
     dance(5);
+    //Check if HDD unlock mode is desired
+    if (digitalRead(BUTT)){
+      unlockSeagate = true;
+      danceFast(5);
+    }
   }
   SPI1.setRX(_MISO);
   SPI1.setTX(_MOSI);
   SPI1.setSCK(_SCK);
   Serial.begin(115200);
+  Serial.println("Serial1 is active");
   if (!noDelay){
     delay(5000);
   }
   if (!grabPassOnly){
     Wire.begin();
   }else{
-    Serial.println("setting up serial2");
+    Serial.println("Setting up Serial2");
     Serial2.setTX(4);
     Serial2.setRX(5);
     Serial2.begin(9600);
@@ -149,9 +172,9 @@ void setup() {
     serialLog(logPrintln, "All Further information will also appear in the LOG");
     isLogFile = true;
   } else {
-    serialLog(logPrintln, "*********************************************");
-    serialLog(logPrintln, "Error create log file! Attempting to continue with logging.");
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "*****************************************************************");
+    serialLog(logPrintln, "Error creating log file!  Attempting to continue without logging.");
+    serialLog(logPrintln, "*****************************************************************");
     isLogFile = false;    
   }
   
@@ -169,9 +192,9 @@ void setup() {
   if (returnStatus == -1) {
     setError();
     serialLog(logPrintln, "");
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "**********************************************************************");
     serialLog(logPrintln, "Error - EEPROM not detected.  Please check wires and ensure Xbox is on");
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "**********************************************************************");
     endProgram();
   }
   serialLog(logPrintln, "OK");
@@ -186,7 +209,7 @@ void setup() {
     serialLog(logPrint, "CRC of copied EEPROM Data: "); crc = checksumCalculator((uint8_t*) deEEPROM, XBOX_EEPROM_SIZE); serialLog(logPrintln, crc);
     XboxCrypto *xbx = new XboxCrypto();
     if (xbx->decrypt((unsigned char *)deEEPROM) >= 0) {
-       serialLog(logPrintln, "EEPROM Decrypt successful!");
+       serialLog(logPrintln, "EEPROM Decrypt Successful!");
        xversion = xbx->getVersion();
        SN = getSerialNum();
        //Get filename for txt file
@@ -208,16 +231,16 @@ void setup() {
        serialLog(logPrintln, "DVD Zone: " + getDVDRegion());
       }
       else {
-        serialLog(logPrintln, "*********************************************");
+        serialLog(logPrintln, "********************************************************************");
         serialLog(logPrintln, "Error - Decryption Failed.  Continuing with save and write fuctions!");
-        serialLog(logPrintln, "*********************************************");
+        serialLog(logPrintln, "********************************************************************");
       }
   }else
   {
     setError();
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "****************************************************************************");
     serialLog(logPrintln, "Error - Failed to get EEPROM data.  Please check wires and ensure Xbox is on");
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "****************************************************************************");
     endProgram();
   }
   
@@ -238,10 +261,10 @@ void setup() {
     returnStatus = myFile.write(pbEEPROM, XBOX_EEPROM_SIZE);
     if (!returnStatus) {
       setError();
-      serialLog(logPrintln, "*********************************************");
-      serialLog(logPrintln, "failed to write EEPROM Data to " + filename + ".  Please check SD card!");
+      serialLog(logPrintln, "***********************************************************************");
+      serialLog(logPrintln, "Failed to write EEPROM Data to " + filename + ".  Please check SD card!");
       serialLog(logPrintln, "EEPROM is NOT backed up!!!!");
-      serialLog(logPrintln, "*********************************************");
+      serialLog(logPrintln, "***********************************************************************");
       myFile.close();
       endProgram();
     }
@@ -252,10 +275,10 @@ void setup() {
   }
   else {
     setError();
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "******************************************************");
     serialLog(logPrintln, "ERROR creating eeprom.bin file.  Please check SD card!");
     serialLog(logPrintln, "EEPROM is NOT backed up!!!!");
-    serialLog(logPrintln, "*********************************************");
+    serialLog(logPrintln, "******************************************************");
     endProgram();
   }
   //Clear EEPROM data from memory
@@ -348,7 +371,7 @@ void loop(){
     } else {
       setError();
       serialLog(logPrintln, "*********************************************");
-      serialLog(logPrintln, "Error Reading eeprom.bin from SD card!");
+      serialLog(logPrintln, "Error reading eeprom.bin from SD card!");
       serialLog(logPrintln, "*********************************************");
       myFile.close();
       while(1);
@@ -379,6 +402,12 @@ void setBusy() {
   digitalWrite(GLED, HIGH);  //Green LED on
 }
 
+// Sets LEDs to indicate Good result dimly (ONLY FOR TESTING)************************************************************
+void setOKdim() {
+  digitalWrite(RLED, LOW); //Red LED off
+  analogWrite(GLED, 20);  //Green LED on
+}
+
 // Sets LEDs to indicate Good result
 void setOK() {
   digitalWrite(RLED, LOW); //Red LED off
@@ -394,6 +423,20 @@ void dance(int times) {
     digitalWrite(RLED, HIGH);
     digitalWrite(GLED, LOW);
     delay(500);
+  }
+  digitalWrite(RLED, LOW);
+  digitalWrite(GLED, LOW);
+}
+
+// Alternating LEDs Faster
+void danceFast(int times) {
+  for (int t = 0; t < times; t++){
+    digitalWrite(RLED, LOW);
+    digitalWrite(GLED, HIGH);
+    delay(250);
+    digitalWrite(RLED, HIGH);
+    digitalWrite(GLED, LOW);
+    delay(250);
   }
   digitalWrite(RLED, LOW);
   digitalWrite(GLED, LOW);
@@ -753,7 +796,7 @@ void serialLog(int cmd, String text){
 
 void endProgramError(){
   if (isLogFile){ 
-    Serial.println("closing log file...");
+    Serial.println("Closing log file...");
     logFile.close();
   }
   digitalWrite(GLED, LOW);
@@ -765,7 +808,7 @@ void endProgramError(){
 
 void endProgram(){
   if (isLogFile){ 
-    Serial.println("closing log file...");
+    Serial.println("Closing log file...");
     logFile.close();
   }
   while(1);
@@ -782,10 +825,10 @@ void HDDPassGrab(){
   int busy = false;
   setOK();
   if (verboseMode){
-    serialLog(logPrintln, "**Verbose Mode Active!  This information is only shown on Terminal Output!**");
+    Serial.println("**Verbose Mode Active!  This information is only shown on Terminal Output!**");
   }
   while (runLoop){
-    if (Serial2.available()) {          //Reading HDD looking for "PSlv" to ensure ready for commands
+    if (Serial2.available()) {          //Reading HDD looking for readout to ensure ready for commands
       if (!busy){
         busy = true;
         setBusy();
@@ -815,13 +858,25 @@ void HDDPassGrab(){
         ErrDet = false;
       }
       if((r1 == 80 && r2 == 83 && r3 == 108 && r4 == 118) || (r1 == 77 && r2 == 115 && r3 == 116 && r4 == 114) || (r1 == 108 && r2 == 97 && r3 == 118 && r4 == 101) || (r1 == 115 && r2 == 116 && r3 == 101 && r4 == 114)){ //PSlv / Mstr (slim) or lave / ster (RJ)  
-        serialLog(logPrintln,"");
+        if (verboseMode){
+          Serial.println("");
+        }
         runLoop = false;
         if (isSlim){
+          serialLog(logPrint, slimText);
+          serialLog(logPrintln, " delay to allow HDD to fully boot up!");
+          delay(slimDelay);
           serialLog(logPrintln, "Slim HDD is Ready!");
+          setBusy();
           prepSlim();
         } else {
-          serialLog(logPrintln, "Jacketed HDD is Ready!");
+          if (r1 == 108 && r2 == 97 && r3 == 118 && r4 == 101){       //RJ in Slave mode
+            serialLog(logPrintln, "****************************************************************************");
+            serialLog(logPrintln, "RJ drive detected in slave mode.  Please set jumper to master and try again!\nIf drive set for master, then drive may be bad... Unfortunately.");
+            serialLog(logPrintln, "****************************************************************************");
+            setError();
+            endProgram();
+          }
           prepRJ();  
         }
       }   
@@ -861,62 +916,169 @@ void prepSlim(){
     //*******************************
     
     serialLog(logPrintln, "Command Sucessful");
-    Serial2.println("/2");
-    delay(1000);
-    while(Serial2.available()){
-      r7 = r8;
-      r8 = Serial2.read();
-    }
-
-    if(r7 == 50 && r8 == 62){           //Looking for "2>" to ensure in the right menus
-      serialLog(logPrintln, "Final Commands being sent");
-      Serial2.println("S006b");
-      delay(250);
-      while(Serial2.available()){
-        conRx = Serial2.read();
-      }
-      Serial2.println("R20,01");
-      delay(250);
-      while(Serial2.available()){
-        conRx = Serial2.read();
-      }
-      Serial2.println("C0,570");
-      delay(250);
-      while(Serial2.available()){
-        conRx = Serial2.read();
-      }
-      Serial2.println("B570");
-      int BUFFER_SIZE = 296;
-      char buf[BUFFER_SIZE];
-      int rlen = Serial2.readBytes(buf, BUFFER_SIZE);
-      HDDPW = "";
-      serialLog(logPrint, "HDD Password: ");
-      for (int i = 252; i < rlen; i++){
-        serialLog(logPrint, (String) buf[i]);
-        HDDPW += (String) buf[i];
-      }
-      serialLog(logPrintln, "");
-      String fnme = getFileNameHDD(HDDSN, "txt", HDDSN);
-      bool fileResult = writePass(fnme, slim, HDDSN, HDDPW);
-      if (!fileResult){
-        serialLog(logPrintln, "Txt Not Written");
-      }
-      setOK();
-      endProgram();
-    } else {
-      serialLog(logPrintln, "HDD didn't enter the Second menu?");
-      setError();
-      endProgram();
-    }
+    slimLocknPass(false);
   } else {
-    serialLog(logPrintln, "HDD doesn't appear to enter a state that accepts commands? (Bad HDD?)");
+    serialLog(logPrintln, "*********************************************************************");
+    serialLog(logPrintln, "HDD didn't appear to enter a state that accepts commands? (Bad HDD?)");
+    serialLog(logPrintln, "*********************************************************************");
     setError();
     endProgram();
   }
 }
 
+//******************************
+//Grab HDD lock bit and Password
+//******************************
+void slimLocknPass(bool lockBitOnly){
+      if (lockBitOnly){
+        serialLog(logPrintln, "Running checks");
+      }
+      Serial2.println("/2");
+      delay(1000);
+      while(Serial2.available()){
+        r7 = r8;
+        r8 = Serial2.read();
+      }
+      if(r7 == 50 && r8 == 62){           //Looking for "2>" to ensure in the right menus
+        if (!lockBitOnly){
+          serialLog(logPrintln, "Final commands being sent");
+        }
+        Serial2.println("S006b");
+        delay(250);
+        while(Serial2.available()){
+          conRx = Serial2.read();
+        }
+        Serial2.println("R20,01");
+        delay(250);
+        while(Serial2.available()){
+          conRx = Serial2.read();
+        }
+        Serial2.println("C0,570");
+        delay(250);
+        while(Serial2.available()){
+          conRx = Serial2.read();
+        }
+        Serial2.println("B570");
+        int BUFFER_SIZE = 296;
+        char buf[BUFFER_SIZE];
+        int rlen = Serial2.readBytes(buf, BUFFER_SIZE);
+        if (lockBitOnly){
+          lockBit = buf[164];
+        }
+        serialLog(logPrint, "Lock bit: ");
+        serialLog(logPrintln, (String) buf[164]);
+        if (!lockBitOnly){
+          HDDPW = "";
+          serialLog(logPrint, "HDD Password: ");
+          for (int i = 252; i < rlen; i++){
+            serialLog(logPrint, (String) buf[i]);
+            HDDPW += (String) buf[i];
+          }
+          serialLog(logPrintln, "");
+          String fnme = getFileNameHDD(HDDSN, "txt", HDDSN);
+          bool fileResult = writePass(fnme, slim, HDDSN, HDDPW);
+          if (!fileResult){
+            serialLog(logPrintln, "Txt Not Written");
+          }
+          delay(5000);
+          while(Serial2.available()){
+            r7 = r8;
+            r8 = Serial2.read();
+            if (verboseMode){
+              Serial.write(r8);
+            }
+          }
+        }
+        if (unlockSeagate && !lockBitOnly){
+          unlockSlim();
+        }
+        if (!lockBitOnly){
+          setOK();
+          endProgram();
+        }
+      } else {
+        serialLog(logPrintln, "*********************************");
+        serialLog(logPrintln, "HDD didn't enter the second menu?");
+        serialLog(logPrintln, "*********************************");
+        setError();
+        endProgram();
+      }
+}
+
+//***********************************************
+//****       CODE FOR SLIM UNLOCK         *******
+//***********************************************
+void unlockSlim(){
+  serialLog(logPrintln, "Attempting to Unlock Slim Drive");
+  Serial2.println("/2");
+  delay(1000);
+  while(Serial2.available()){
+    r7 = r8;
+    r8 = Serial2.read();
+    if (verboseMode){
+      Serial.write(r8);
+    }
+  }
+  if(r7 == 50 && r8 == 62){           //Looking for "2>" to ensure in the right menus
+    serialLog(logPrintln, "Final unlock commands being sent");
+    Serial2.println("S006b");
+    delay(250);
+    while(Serial2.available()){
+      conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
+    }
+    Serial2.println("R21,01");
+    delay(250);
+    while(Serial2.available()){
+      conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
+    }
+    Serial2.println("C0,570");
+    delay(250);
+    while(Serial2.available()){
+      conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
+    }
+    Serial2.println("W20,01");
+    delay(2000);
+    while(Serial2.available()){
+      conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
+    }
+    slimLocknPass(true);
+    if (lockBit == 48){
+      serialLog(logPrintln, "Slim Drive should now be unlocked!");
+      setOK();
+      endProgram();
+    } else {
+      serialLog(logPrintln, "******************************************************");
+      serialLog(logPrintln, "Slim Drive failed to unlock... Could be a timing issue");
+      serialLog(logPrintln, "******************************************************");
+      setError();
+      endProgram();
+    }
+  } else {
+      serialLog(logPrintln, "*********************************");
+      serialLog(logPrintln, "HDD didn't enter the second menu?");
+      serialLog(logPrintln, "*********************************");
+      setError();
+      endProgram();
+  }
+}
+
 void prepRJ(){
-  delay(5000);
+  serialLog(logPrint, rjText);
+  serialLog(logPrintln, " delay to allow drive to fully boot!");
+  delay(rjDelay);
+  serialLog(logPrintln, "Jacketed HDD is Ready!");
   Serial2.write(26);
   delay(500);
   Serial2.write(18);                    //CTRL + R
@@ -925,6 +1087,9 @@ void prepRJ(){
   while(Serial2.available()){
     r5 = r6;
     r6 = Serial2.read();
+    if (verboseMode){
+        Serial.write(r6);
+      }
   }
   if (r5 == 84 && r6 == 62 || true){    //looking for "T>"
     //******************************
@@ -940,37 +1105,85 @@ void prepRJ(){
       serialLog(logPrint, (String) sbuf[i]);
       HDDSN += (String) sbuf[i];
     }
+    if (verboseMode){
+      Serial.println("");
+      for (int i = 0; i < srlen; i++){
+        Serial.print((String) sbuf[i]);
+      }
+    }
     serialLog(logPrintln, "");
-    Serial2.println("");
+    Serial2.write(13);
     delay(500);
     while(Serial2.available()){
       conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
     }
     //*******************************
     
     serialLog(logPrintln, "Command Successful");
+    rjLocknPass(false);
+  } else {
+    serialLog(logPrintln, "********************************************************************");
+    serialLog(logPrintln, "HDD didn't appear to enter a state that accepts commands? (Bad HDD?)");
+    serialLog(logPrintln, "********************************************************************");
+    setError();
+    endProgram();
+  }
+}
+
+//******************************
+// Grab RJ lock bit and Password
+//******************************
+void rjLocknPass(bool lockBitOnly){
+    Serial2.println("/T");
+    delay(500);
+    while(Serial2.available()){
+      conRx = Serial2.read();
+      if (verboseMode){
+        Serial.write(conRx);
+      }
+    }
+  //********************* 
+  if (r5 == 84 && r6 == 62 || true){    //looking for "T>"
     Serial2.println("G1");
-    delay(1000);
+    delay(250);
     while(Serial2.available()){
       r7 = r8;
       r8 = Serial2.read();
+      if (verboseMode){
+        Serial.write(r8);
+      }
     }
-    if (r7 == 84 && r8 == 62){          //looking for "T>"
-      serialLog(logPrintln, "Command Successful");
+    if (r7 == 84 && r8 == 62 || true){          //looking for "T>"
+      if(!lockBitOnly){
+        serialLog(logPrintln, "Command Successful");
+      }
       Serial2.println("/2");
-      delay(1000);
+      delay(250);
       while(Serial2.available()){
         r9 = r10;
         r10 = Serial2.read();
+        if (verboseMode){
+        Serial.write(r10);
+        }
       }
       if(r9 == 50 && r10 == 62){        //Looking for "2>" to ensure in the right menus
-        serialLog(logPrintln, "Final Commands being sent");
+        if(!lockBitOnly){
+          serialLog(logPrintln, "Final commands being sent");
+        }
         Serial2.println("r,5,10");
         delay(250);
         while(Serial2.available()){
           r10 = Serial2.read();
+          if (verboseMode){
+            Serial.write(r10);
+          }
           if (r10 == 67) {              // "C" meaning command isn't going to work
+            serialLog(logPrintln, "*****************************************************");
             serialLog(logPrintln, "**Command Failed! Cycle power to HDD and try again!**");
+            serialLog(logPrintln, "*****************************************************");
             setError();
             endProgram();
           }
@@ -979,37 +1192,205 @@ void prepRJ(){
         delay(250);
         while(Serial2.available()){
           conRx = Serial2.read();
+          if (verboseMode){
+            Serial.write(conRx);
+          }
         }
         Serial2.println("B010");
         int BUFFER_SIZE = 288;
         char buf[BUFFER_SIZE];
         int rlen = Serial2.readBytes(buf, BUFFER_SIZE);
-        HDDPW = "";
-        serialLog(logPrint, "HDD Password: ");
-        for (int i = 244; i < rlen; i++){
-          serialLog(logPrint, (String) buf[i]);
-          HDDPW += (String) buf[i];
+        if (verboseMode){
+          for (int k = 0; k < rlen; k++){
+            Serial.write(buf[k]);
+          }
+          Serial.println("");
         }
-        serialLog(logPrintln, "");
-        String fnme = getFileNameHDD(HDDSN, "txt", HDDSN);
-        bool fileResult = writePass(fnme, rubber, HDDSN, HDDPW);
-        if (!fileResult){
-          serialLog(logPrintln, "Txt Not Written");
+        if (lockBitOnly){
+          lockBit = buf[156];
         }
-        setOK();
-        endProgram();
+        serialLog(logPrint, "Lock bit: ");
+        serialLog(logPrintln, (String) buf[156]);
+        if (!lockBitOnly){
+          HDDPW = "";
+          serialLog(logPrint, "HDD Password: ");
+          for (int i = 244; i < rlen; i++){
+            serialLog(logPrint, (String) buf[i]);
+            HDDPW += (String) buf[i];
+          }
+          serialLog(logPrintln, "");
+          String fnme = getFileNameHDD(HDDSN, "txt", HDDSN);
+          bool fileResult = writePass(fnme, rubber, HDDSN, HDDPW);
+          if (!fileResult){
+            serialLog(logPrintln, "Txt Not Written");
+          }
+          if (unlockSeagate){
+            rjUnlock();
+          }
+          setOK();
+          endProgram();
+        }
       } else {
-        serialLog(logPrintln, "HDD didn't enter the Second menu?");
+        serialLog(logPrintln, "*********************************");
+        serialLog(logPrintln, "HDD didn't enter the second menu?");
+        serialLog(logPrintln, "*********************************");
         setError();
         endProgram();
       }
     } else {
-      serialLog(logPrintln, "HDD didn't enter Diag menu?");
+      serialLog(logPrintln, "***************************");
+      serialLog(logPrintln, "HDD didn't enter diag menu?");
+      serialLog(logPrintln, "***************************");
       setError();
       endProgram();
     }
   } else {
-    serialLog(logPrintln, "HDD doesn't appear to enter a state that accepts commands? (Bad HDD?)");
+    serialLog(logPrintln, "*********************************************************************");
+    serialLog(logPrintln, "HDD didn't appear to enter a state that accepts commands? (Bad HDD?)");
+    serialLog(logPrintln, "*********************************************************************");
+    setError();
+    endProgram();
+  }
+}
+
+//******************************
+//    Grab RJ unlock routine
+//******************************
+void rjUnlock(){
+  serialLog(logPrintln, "RJ Password backed up, proceeding to attempt to unlock the drive!");
+  delay(2000);
+  while(Serial2.available()){Serial2.read();}
+  Serial2.print("/1");
+  delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.print("U002000");
+  delay(250);
+  Serial2.write(13);
+  delay(250);
+  bool correctResponse = false;
+  while(Serial2.available()){
+    r1 = r2;
+    r2 = r3;
+    r3 = r4;
+    r4 = r5;
+    r5 = r6;
+    r6 = r7;
+    r7 = r8;
+    r8 = r9;
+    r9 = r10;
+    r10 = r11;
+    r11 = r12;
+    r12 = r13;
+    r13 = r14;
+    r14 = Serial2.read();
+    if (verboseMode){
+      Serial.write(r14);
+    }
+    if (r1 == 65 && r2 == 100 && r3 == 114 && r4 == 32 && r5 == 48 && r6 == 50 && r7 == 48 && r8 == 48 && r9 == 48 && r10 == 32 && r11 == 61 && r12 == 32 && r13 == 48 && r14 == 49){   //Looking for "Adr 02000 = 01
+      correctResponse = true;
+    }
+  }
+  if (!correctResponse){
+    if (verboseMode){
+      Serial.println("");
+    }
+    serialLog(logPrintln, "****************************************************************************");
+    serialLog(logPrintln, "HDD didn't respond correctly to last command.  Could mean:\n1. Drive is already unlocked!\n2. Drive is bad :(\n3. Drive needs a longer delay");
+    serialLog(logPrintln, "****************************************************************************");
+    setError();
+    endProgram();
+  }
+  correctResponse = false;
+  if (verboseMode){
+    Serial.println("");
+  }
+  serialLog(logPrintln, "HDD has responded correctly and appears locked... Sending final commands");
+  Serial2.print("0");
+  delay(250);
+  Serial2.print("0");
+  delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  //Serial2.println("");
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.print("/T");
+  //delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.print("G1");
+  //delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.print("/2");
+  delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.print("w,5,10");
+  //delay(250);
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  Serial2.write(13);
+  delay(250);
+  while(Serial2.available()){
+    conRx = Serial2.read();
+    if (verboseMode){
+      Serial.write(conRx);
+    }
+  }
+  serialLog(logPrintln, "Unlock commands sent!\nChecking drive lock status");
+  rjLocknPass(true);
+  if (lockBit == 48){
+    serialLog(logPrintln, "RJ Drive should now be unlocked!");
+    setOK();
+    endProgram();
+  } else {
+    serialLog(logPrintln, "****************************************************");
+    serialLog(logPrintln, "RJ Drive failed to unlock... Could be a timing issue");
+    serialLog(logPrintln, "****************************************************");
     setError();
     endProgram();
   }
